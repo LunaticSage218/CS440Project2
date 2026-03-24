@@ -5,48 +5,25 @@ async function fetchContacts() {
     const list = document.getElementById("contactList");
     list.innerHTML = "";
 
-    contacts.forEach(addContactToUI);
-}
+    contacts.forEach(c => {
+        const div = document.createElement("div");
+        div.className = "contact";
+        div.id = `contact-${c.id}`;
 
-function addContactToUI(contact) {
-    const div = document.createElement("div");
-    div.className = "contact";
-    div.id = `contact-${contact.id}`;
-
-    const list = document.getElementById("contactList");
-
-    div.innerHTML = `
-        <div class="contact-info" id="info-${contact.id}">
-            <strong>${contact.name}</strong> |
-            ${contact.phone} |
-            ${contact.address}
-        </div>
-
-        <div class="actions">
-            <button onclick="startEdit(${contact.id}, '${contact.name}', '${contact.phone}', '${contact.address}')">Edit</button>
-            <button onclick="deleteContact(${contact.id})">Delete</button>
-        </div>
-    `;
-
-    list.appendChild(div);
-}
-
-
-function removeContactUI(id) {
-    const el = document.getElementById(`contact-${id}`);
-    if (el) el.remove();
-}
-
-function updateContactUI(c) {
-    const info = document.getElementById(`info-${c.id}`);
-
-    if (info) {
-        info.innerHTML = `
-            <strong>${c.name}</strong> |
-            ${c.phone} |
-            ${c.address}
+        div.innerHTML = `
+            <div class="contact-info" id="info-${c.id}">
+                <strong>${c.name}</strong> |
+                ${c.phone} |
+                ${c.address}
+            </div>
+            <div class="actions">
+                <button onclick="startEdit(${c.id}, '${c.name}', '${c.phone}', '${c.address}')">Edit</button>
+                <button onclick="deleteContact(${c.id})">Delete</button>
+            </div>
         `;
-    }
+
+        list.appendChild(div);
+    });
 }
 
 async function addContact() {
@@ -63,10 +40,13 @@ async function addContact() {
     document.getElementById("name").value = "";
     document.getElementById("phone").value = "";
     document.getElementById("address").value = "";
+
+    fetchContacts();
 }
 
 async function deleteContact(id) {
-    await fetch(`/api/contacts/${id}`, {method: "DELETE"});
+    await fetch(`/api/contacts/${id}`, { method: "DELETE" });
+    fetchContacts();
 }
 
 function startEdit(id, name, phone, address) {
@@ -91,33 +71,8 @@ async function saveEdit(id) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, phone, address })
     });
+
+    fetchContacts();
 }
-
-const socket = new WebSocket("ws://localhost:8765");
-
-socket.onopen = () => {
-    console.log("WebSocket connected");
-};
-
-socket.onmessage = (event) => {
-    console.log("Event received:", event.data);
-
-    const data = JSON.parse(event.data);
-
-    switch (data.event) {
-
-        case "contact_added":
-            addContactToUI(data.contact);
-            break;
-
-        case "contact_updated":
-            updateContactUI(data.contact);
-            break;
-
-        case "contact_deleted":
-            removeContactUI(data.id);
-            break;
-    }
-};
 
 fetchContacts();
